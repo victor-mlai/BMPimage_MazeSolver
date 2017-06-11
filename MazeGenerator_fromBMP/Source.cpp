@@ -4,8 +4,8 @@
 #include <stdlib.h>	// malloc and calloc
 #include <conio.h>	// _getch()
 #include <vector>
-#include <fstream>	// read write files
-#include <iterator>	// iterate through files
+#include <fstream>	// read input file
+#include <iterator>	// iterate through file's bits
 using namespace std;
 
 typedef struct
@@ -13,7 +13,7 @@ typedef struct
 	int x, y;
 }point;
 
-void writeBMPFileFromMat(vector< vector<int> > mat, point st[500], int k, int *p, vector<unsigned char> imgdata) {
+void writeBMPFileFromMat(vector< vector<int> > mat, FILE* fout, point st[500], int k, int *p, vector<unsigned char> imgdata) {
 	int offset = imgdata[10];
 	int width = imgdata[18];
 	int height = imgdata[22];
@@ -40,13 +40,15 @@ void writeBMPFileFromMat(vector< vector<int> > mat, point st[500], int k, int *p
 		k += padding;
 	}
 
+	// create auxiliary vector so I can call fwrite with the right parameters
 	unsigned char* vec = (unsigned char*)calloc(imgdata.size(), sizeof(unsigned char));
 	int size = 0;
 	for (char c : imgdata)
 		vec[size++] = (unsigned char)c;
-	FILE* f = fopen("img.bmp", "wb");
-	fwrite(vec, 1, size, f);
-	fclose(f);
+
+	fwrite(vec, 1, size, fout);
+	fclose(fout);
+	free(vec);
 }
 
 void wait(float seconds)
@@ -106,8 +108,8 @@ void tipar(vector< vector<int> > mat, point st[500], int k, int *p, int height, 
 
 	mat[st[i].x][st[i].y] = p[i];
 
-	system("cls");
-	afisare(mat);
+	//system("cls");
+	//afisare(mat);
 }
 
 point d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };
@@ -233,7 +235,7 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 		}
 
 		if (k != k2) {
-			writeBMPFileFromMat(mat, st, k, p, imgdata);
+			writeBMPFileFromMat(mat, fout, st, k, p, imgdata);
 			tipar(mat, st, k, p, height, width);
 		}
 
@@ -284,6 +286,10 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 		if (as)
 			if (st[k].x == 1 || st[k].x == height || st[k].y == 1 || st[k].y == width) {
 				tipar(mat, st, k, p, height, width);
+				writeBMPFileFromMat(mat, fout, st, k, p, imgdata);
+
+				printf("\nPress any key for next solution\n");
+				_getch();	// waits any key
 				ok = 1;
 			}
 			else {
@@ -360,6 +366,9 @@ int main()
 	else {
 		solveBest(mat, fout, buffer);
 	}
+
+	// free memory
+	buffer.clear();
 
 	printf("\nPress any key\n");
 	_getch();	// waits any key
