@@ -87,7 +87,6 @@ void writeBMPFileFromMat(vector< vector<int> > mat, FILE* fout, point st[500], i
 		vec[size++] = (unsigned char)c;
 
 	fwrite(vec, 1, size, fout);
-	fclose(fout);
 	free(vec);
 }
 
@@ -207,54 +206,19 @@ void tipar(vector< vector<int> > mat, point st[500], int k, int *p, int height, 
 
 point d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };	// used by solveBest and solveBKT
 
-// dfs for calculating distances
-void visit(vector< vector<int> >& mat, point E, int depth) {
-	if (depth < 1)
-		return;
-
-	int n = mat.size() - 1;
-	int m = mat[0].size() - 1;
-
-	point V;
-	for (int i = 0; i < 4; i++) {	// for each neighbour
-		V.x = E.x + d[i].x;
-		V.y = E.y + d[i].y;
-		
-		if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
-			if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[E.x][E.y] + 1) {
-				mat[V.x][V.y] = mat[E.x][E.y] + 1;
-				visit(mat, V, depth - 1);
-			}
-		}
-	}
-}
-
+// for every point in the maze assigns the smallest distance to any exit
 void bfs(vector< vector<int> >& mat, vector<point> exits) {
 	int n = mat.size() - 1;
 	int m = mat[0].size() - 1;
-
-	point V;
-	for (int i = 0; i < 4; i++) {	// for each neighbour
-		V.x = E.x + d[i].x;
-		V.y = E.y + d[i].y;
-
-		if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
-			if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[E.x][E.y] + 1) {
-				mat[V.x][V.y] = mat[E.x][E.y] + 1;
-				visit(mat, V, depth - 1);
-			}
-		}
-	}
-
 	queue<point> q;
+
 	for (point E : exits) {
-		int depth = n*m/4;	// nr max de noduri in coada
 		q.push(E);
+		mat[E.x][E.y] = 5;
 
 		while (!q.empty()) {
 			point F = q.front();
 			q.pop();
-			mat[F.x][F.y] = 5;
 
 			point V;
 			for (int i = 0; i < 4; i++) {	// for each neighbour
@@ -263,14 +227,15 @@ void bfs(vector< vector<int> >& mat, vector<point> exits) {
 
 				if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
 					if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[F.x][F.y] + 1) {
-						mat[V.x][V.y] = mat[E.x][E.y] + 1;
-						depth--;
+						mat[V.x][V.y] = mat[F.x][F.y] + 1;
 						q.push(V);
 					}
 				}
 			}
 		}
 	}
+
+	// printMat(mat); // use this to see the distances
 }
 
 void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgdata) {
@@ -279,10 +244,7 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 	
 	vector<point> exits = readEndPoz(mat);
 
-	for (point E : exits) {
-		mat[E.x][E.y] = 5;
-		visit(mat, E, height*width / 4);
-	}
+	bfs(mat, exits);
 
 	point* st = (point*)calloc((height*width / 2), sizeof(point));	// the solution vector
 	int* p		= (int*)calloc((height*width / 2), sizeof(int));	// the directions
@@ -334,6 +296,7 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 	}
 }
 
+// 2 helper functions for BackTracking
 bool isSol(int x, int y, vector<point> exits) {
 	for (point E : exits) {
 		if (E.x == x && E.y == y)
@@ -358,7 +321,7 @@ int valid(vector< vector<int> > mat, point st[600], int k)
 	return 1;
 }
 
-// TODO: shows only 1 solution and then it crashes
+// Backtracking
 void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgdata) {
 
 	int height = mat.size() - 1;
@@ -402,10 +365,11 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 			if (isSol(st[k].x, st[k].y, exits)) {
 				tipar(mat, st, k, p, height, width);
 				writeBMPFileFromMat(mat, fout, st, k, p, imgdata);
+				ok = 1;	// a solution was found
 
-				printf("\nPress any key for next solution\n");
-				_getch();	// waits any key
-				ok = 1;
+				printf("\nStop at this solution? y/n\n");
+				if(_getch() == 'y')
+					break;
 			}
 			else {
 				k++;
@@ -431,6 +395,7 @@ int main() {
 	std::vector<unsigned char> buffer((
 		std::istreambuf_iterator<char>(input)),
 		(std::istreambuf_iterator<char>()));
+	input.close();
 
 	vector< vector<int> > mat = createMatFromBMPFile(buffer);
 	printMaze(mat);
@@ -447,6 +412,7 @@ int main() {
 
 	// free memory
 	buffer.clear();
+	fclose(fout);
 
 	printf("\nPress any key\n");
 	_getch();	// waits any key
