@@ -7,6 +7,3 @@ This way, you can choose the start and exit points, not jost the start one.
 
 TODO:
 1. solve the 1024.bmp image
-2. get rid of recursion using priority queue
-3. rewrite backtracking
-4. 
