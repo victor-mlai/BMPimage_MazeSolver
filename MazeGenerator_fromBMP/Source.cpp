@@ -9,10 +9,9 @@
 #include <iterator>	// iterate through file's bits
 using namespace std;
 
-typedef struct
-{
-	int x, y;
-}point;
+typedef struct { int x, y; }point;
+
+point d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };	// used by solveBest and solveBKT
 
 vector< vector<int> > createMatFromBMPFile(vector<unsigned char> imagedata) {
 	unsigned char bpp, padding, offset;
@@ -167,7 +166,7 @@ void printMaze(vector< vector<int> > mat)
 	int zid = 254;
 	printf("\n");
 	for (j = 1; j <= width; j+=2)
-		printf(" %-2d ", j);
+		printf("%-2d  ", j);
 	printf("\n");
 	for (i = 1; i <= height; i++)
 	{
@@ -203,8 +202,6 @@ void tipar(vector< vector<int> > mat, point st[500], int k, int *p, int height, 
 	system("cls");
 	printMaze(mat);
 }
-
-point d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };	// used by solveBest and solveBKT
 
 // for every point in the maze assigns the smallest distance to any exit
 void bfs(vector< vector<int> >& mat, vector<point> exits) {
@@ -289,9 +286,8 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 			tipar(mat, st, k, p, height, width);
 		}
 
-		printf("Try another starting point? d/n\n");
-		int d = _getch();
-		if (d == 'n')
+		printf("Try another starting point? y/n\n");
+		if (_getch() == 'n')
 			break;
 	}
 }
@@ -343,7 +339,6 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 	st[1].y = Sy;
 
 	int as, ev, ok = 0;
-	point d[5] = { { 0,0 },{ 0,1 },{ 1,0 },{ 0,-1 },{ -1,0 } };
 
 	int k = 2;
 	while (k > 1)
@@ -353,9 +348,9 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 		{
 			if (p[k] < 4)
 			{
-				p[k]++;
 				st[k].x = st[k - 1].x + d[p[k]].x;
 				st[k].y = st[k - 1].y + d[p[k]].y;
+				p[k]++;
 				ev = valid(mat, st, k);
 			}
 			else
@@ -400,10 +395,8 @@ int main() {
 	vector< vector<int> > mat = createMatFromBMPFile(buffer);
 	printMaze(mat);
 
-	printf("d:Show every solution or\nn:the best one?\n d/n\n");
-	int d = _getch();
-
-	if (d == 'd') {
+	printf("d:Show every solution or\nn:the best one?\n y/n\n");
+	if (_getch() == 'y') {
 		solveBKT(mat, fout, buffer);
 	}
 	else {
