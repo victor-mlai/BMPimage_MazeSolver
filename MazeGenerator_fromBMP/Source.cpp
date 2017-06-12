@@ -395,12 +395,12 @@ int main() {
 	vector< vector<int> > mat = createMatFromBMPFile(buffer);
 	printMaze(mat);
 
-	printf("d:Show every solution or\nn:the best one?\n y/n\n");
+	printf("y:Show the best solution (Recomended) or\nn:every single solution? (Note that Backtracking is very slow)\n y/n\n");
 	if (_getch() == 'y') {
-		solveBKT(mat, fout, buffer);
+		solveBest(mat, fout, buffer);
 	}
 	else {
-		solveBest(mat, fout, buffer);
+		solveBKT(mat, fout, buffer);
 	}
 
 	// free memory
