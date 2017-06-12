@@ -4,6 +4,7 @@
 #include <stdlib.h>	// malloc and calloc
 #include <conio.h>	// _getch()
 #include <vector>
+#include <queue>	// priority queue for bfs
 #include <fstream>	// read input file
 #include <iterator>	// iterate through file's bits
 using namespace std;
@@ -12,6 +13,45 @@ typedef struct
 {
 	int x, y;
 }point;
+
+vector< vector<int> > createMatFromBMPFile(vector<unsigned char> imagedata) {
+	unsigned char bpp, padding, offset;
+
+	offset = imagedata[10];
+
+	uint16_t width = imagedata[19];
+	width <<= 8;
+	width += imagedata[18];
+
+	uint16_t height = imagedata[23];
+	height <<= 8;
+	height += imagedata[22];
+
+	bpp = imagedata[28] / 8;	// bytes per pixel (bits/8 = bytes)
+	padding = (4 - (width * bpp) % 4) % 4;
+
+	/* creare matrice */
+	vector< vector<int> > mat(height + 1, vector<int>(width + 1));
+
+	int k = offset;
+	for (int i = height; i >= 1; i--)
+	{
+		for (int j = 1; j <= width; j++)
+		{
+			int s = 0;
+			for (int b = 0; b < bpp; b++)
+				s += (int)imagedata[k + b];
+			if (s < 10 * bpp) // is pixel almost black
+			{
+				mat[i][j] = -1;	// put wall
+			}
+			k += bpp;
+		}
+		k += padding;
+	}
+
+	return mat;
+}
 
 void writeBMPFileFromMat(vector< vector<int> > mat, FILE* fout, point st[500], int k, int *p, vector<unsigned char> imgdata) {
 	int offset = imgdata[10];
@@ -51,89 +91,14 @@ void writeBMPFileFromMat(vector< vector<int> > mat, FILE* fout, point st[500], i
 	free(vec);
 }
 
+// stops the program for x seconds (used for delaying the output when printing the next arrow ( >>, <<, vv, ^^ ))
 void wait(float seconds)
 {
 	clock_t endwait = clock() + (clock_t)seconds * CLOCKS_PER_SEC;
 	while (clock() < endwait) {}
 }
 
-int valid(vector< vector<int> > mat, point st[500], int k)
-{
-	int i;
-	if (mat[st[k].x][st[k].y] == -1)
-		return 0;
-	for (i = 1; i<k; i++)
-		if (st[k].x == st[i].x && st[k].y == st[i].y)
-			return 0;
-	return 1;
-}
-
-void afisare(vector< vector<int> > mat)
-{
-	int height = mat.size() - 1;
-	int width = mat[0].size() - 1;
-	int i, j;
-	int zid = 254;
-	printf("\n");
-	for (j = 1; j <= width; j+=2)
-		printf(" %-2d ", j);
-	printf("\n");
-	for (i = 1; i <= height; i++)
-	{
-		for (j = 1; j <= width; j++)
-			switch (mat[i][j])
-			{
-			case -1: printf("%c%c", zid, zid); break;
-			case 1: printf("<<"); break;
-			case 2: printf("vv"); break;
-			case 3: printf(">>"); break;
-			case 4: printf("^^"); break;
-			default: printf("  "); break;
-			}
-		printf(" %d\n", i);
-	}
-	printf("\n");
-}
-
-void tipar(vector< vector<int> > mat, point st[500], int k, int *p, int height, int width)
-{
-	int i;
-	for (i = 1; i<k; i++)
-	{
-		mat[st[i].x][st[i].y] = p[i + 1];
-		
-		//system("cls");
-		//afisare(mat);
-	}
-
-	mat[st[i].x][st[i].y] = p[i];
-
-	//system("cls");
-	//afisare(mat);
-}
-
-point d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };
-void visit(vector< vector<int> >& mat, point E, int depth) {
-	if (depth < 1)
-		return;
-
-	int n = mat.size() - 1;
-	int m = mat[0].size() - 1;
-
-	point V;
-	for (int i = 0; i < 4; i++) {	// for each neighbour
-		V.x = E.x + d[i].x;
-		V.y = E.y + d[i].y;
-		
-		if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
-			if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[E.x][E.y] + 1) {
-				mat[V.x][V.y] = mat[E.x][E.y] + 1;
-				visit(mat, V, depth - 1);
-			}
-		}
-	}
-}
-
+// prints the maze with all the distances (used for debugging in solveBest)
 void printMat(vector< vector<int> > mat) {
 	int n = mat.size() - 1;
 	int m = mat[0].size() - 1;
@@ -168,16 +133,16 @@ tryagain:
 	}
 }
 
-void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgdata) {
-	int height = mat.size() - 1;
-	int width = mat[1].size() - 1;
-	
+vector<point> readEndPoz(vector< vector<int> > mat) {
+	int height = mat.size();
+	int width = mat[0].size();
+
 	int nr_exits;
 	printf("How many exits?\n");
 	scanf("%d", &nr_exits);
+
 	int Ex, Ey;	// End coordonates
 	vector<point> exits;
-
 	for (int i = 0; i < nr_exits; i++) {
 	tryagain2:
 		printf("Write the coord for end position (Format: x y)\n");
@@ -192,17 +157,140 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 		exits.push_back({ Ex, Ey });
 	}
 
+	return exits;
+}
+
+void printMaze(vector< vector<int> > mat)
+{
+	int height = mat.size() - 1;
+	int width = mat[0].size() - 1;
+	int i, j;
+	int zid = 254;
+	printf("\n");
+	for (j = 1; j <= width; j+=2)
+		printf(" %-2d ", j);
+	printf("\n");
+	for (i = 1; i <= height; i++)
+	{
+		for (j = 1; j <= width; j++)
+			switch (mat[i][j])
+			{
+			case -1: printf("%c%c", zid, zid); break;
+			case 1: printf("<<"); break;
+			case 2: printf("vv"); break;
+			case 3: printf(">>"); break;
+			case 4: printf("^^"); break;
+			default: printf("  "); break;
+			}
+		printf(" %d\n", i);
+	}
+	printf("\n");
+}
+
+// prints the maze with the path
+void tipar(vector< vector<int> > mat, point st[500], int k, int *p, int height, int width)
+{
+	int i;
+	for (i = 1; i<k; i++)
+	{
+		mat[st[i].x][st[i].y] = p[i + 1];
+
+		//system("cls");
+		//afisare(mat);
+	}
+
+	mat[st[i].x][st[i].y] = p[i];
+
+	system("cls");
+	printMaze(mat);
+}
+
+point d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };	// used by solveBest and solveBKT
+
+// dfs for calculating distances
+void visit(vector< vector<int> >& mat, point E, int depth) {
+	if (depth < 1)
+		return;
+
+	int n = mat.size() - 1;
+	int m = mat[0].size() - 1;
+
+	point V;
+	for (int i = 0; i < 4; i++) {	// for each neighbour
+		V.x = E.x + d[i].x;
+		V.y = E.y + d[i].y;
+		
+		if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
+			if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[E.x][E.y] + 1) {
+				mat[V.x][V.y] = mat[E.x][E.y] + 1;
+				visit(mat, V, depth - 1);
+			}
+		}
+	}
+}
+
+void bfs(vector< vector<int> >& mat, vector<point> exits) {
+	int n = mat.size() - 1;
+	int m = mat[0].size() - 1;
+
+	point V;
+	for (int i = 0; i < 4; i++) {	// for each neighbour
+		V.x = E.x + d[i].x;
+		V.y = E.y + d[i].y;
+
+		if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
+			if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[E.x][E.y] + 1) {
+				mat[V.x][V.y] = mat[E.x][E.y] + 1;
+				visit(mat, V, depth - 1);
+			}
+		}
+	}
+
+	queue<point> q;
+	for (point E : exits) {
+		int depth = n*m/4;	// nr max de noduri in coada
+		q.push(E);
+
+		while (!q.empty()) {
+			point F = q.front();
+			q.pop();
+			mat[F.x][F.y] = 5;
+
+			point V;
+			for (int i = 0; i < 4; i++) {	// for each neighbour
+				V.x = F.x + d[i].x;
+				V.y = F.y + d[i].y;
+
+				if (V.x > 0 && V.x < n && V.y > 0 && V.y < m) {
+					if (mat[V.x][V.y] == 0 || mat[V.x][V.y] > mat[F.x][F.y] + 1) {
+						mat[V.x][V.y] = mat[E.x][E.y] + 1;
+						depth--;
+						q.push(V);
+					}
+				}
+			}
+		}
+	}
+}
+
+void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgdata) {
+	int height = mat.size() - 1;
+	int width = mat[1].size() - 1;
+	
+	vector<point> exits = readEndPoz(mat);
+
 	for (point E : exits) {
 		mat[E.x][E.y] = 5;
 		visit(mat, E, height*width / 4);
 	}
 
 	point* st = (point*)calloc((height*width / 2), sizeof(point));	// the solution vector
-	int* p		= (int*)calloc((height*width / 2), sizeof(int));	// the direction
+	int* p		= (int*)calloc((height*width / 2), sizeof(int));	// the directions
 	if (!p || !st) { free(p);  free(st); }
 
+	// while I want to start from a different point
+	int Sx, Sy;
 	while (true) {
-		int Sx, Sy;
 		readStartPoz(mat, Sx, Sy);
 		st[1].x = Sx;
 		st[1].y = Sy;
@@ -246,6 +334,31 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 	}
 }
 
+bool isSol(int x, int y, vector<point> exits) {
+	for (point E : exits) {
+		if (E.x == x && E.y == y)
+			return true;
+	}
+
+	return false;
+}
+
+// checks if the solution is valid
+int valid(vector< vector<int> > mat, point st[600], int k)
+{
+	int i;
+	if (mat[st[k].x][st[k].y] == -1)	// if it's a wall on this position
+		return 0;
+
+	// check if the solution already has this position
+	for (i = 1; i < k; i++)
+		if (st[k].x == st[i].x && st[k].y == st[i].y)
+			return 0;
+
+	return 1;
+}
+
+// TODO: shows only 1 solution and then it crashes
 void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgdata) {
 
 	int height = mat.size() - 1;
@@ -259,6 +372,8 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 		free(p);  free(st);
 	}
 
+	vector<point> exits = readEndPoz(mat); 
+	
 	int Sx, Sy;
 	readStartPoz(mat, Sx, Sy);
 	st[1].x = Sx;
@@ -284,7 +399,7 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 				as = 0;
 		}
 		if (as)
-			if (st[k].x == 1 || st[k].x == height || st[k].y == 1 || st[k].y == width) {
+			if (isSol(st[k].x, st[k].y, exits)) {
 				tipar(mat, st, k, p, height, width);
 				writeBMPFileFromMat(mat, fout, st, k, p, imgdata);
 
@@ -308,44 +423,7 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 	free(p);  free(st);
 }
 
-vector< vector<int> > createMatFromBMPFile(vector<unsigned char> & imagedata) {
-	unsigned char bpp, padding, offset;
-
-	offset = imagedata[10];
-	uint16_t width = imagedata[19];
-	width <<= 8;
-	width += imagedata[18];
-	uint16_t height = imagedata[23];
-	height <<= 8;
-	height += imagedata[22];
-	bpp = imagedata[28] / 8;	// bytes per pixel (bits/8 = bytes)
-	padding = (4 - (width * bpp) % 4) % 4;
-
-	/* creare matrice */
-	vector< vector<int> > mat(height + 1, vector<int>(width + 1));
-
-	int k = offset;
-	for (int i = height; i >= 1; i--)
-	{
-		for (int j = 1; j <= width; j++)
-		{
-			int s = 0;
-			for (int b = 0; b < bpp; b++)
-				s += (int)imagedata[k + b];
-			if (s < 10 * bpp) // is pixel almost black
-			{
-				mat[i][j] = -1;	// put wall
-			}
-			k += bpp;
-		}
-		k += padding;
-	}
-
-	return mat;
-}
-
-int main()
-{
+int main() {
 	FILE* fout = fopen("maze41Solved.bmp", "wb");
 
 	std::ifstream input("maze41.bmp", std::ios::binary);
@@ -355,9 +433,9 @@ int main()
 		(std::istreambuf_iterator<char>()));
 
 	vector< vector<int> > mat = createMatFromBMPFile(buffer);
-	afisare(mat);
+	printMaze(mat);
 
-	printf("d:Show every solution or just n:the best one? d/n\n");
+	printf("d:Show every solution or\nn:the best one?\n d/n\n");
 	int d = _getch();
 
 	if (d == 'd') {
