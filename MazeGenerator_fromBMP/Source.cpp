@@ -299,7 +299,7 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 		int Cy = Sy;
 		int Vx, Vy;
 		int k = 1;
-		int k2;
+		int k2 = 2;
 		while (mat[Cx][Cy] != 5) {	// while the Current position isn't the exit
 			k2 = k;	// for future checks
 			for (int i = 0; i < 4; i++) {
@@ -332,6 +332,7 @@ void solveBest(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgd
 		if (_getch() == 'n')
 			break;
 
+		system("cls");
 		printMazeCrop(mat, { 50,50 }, 60);
 	}
 
