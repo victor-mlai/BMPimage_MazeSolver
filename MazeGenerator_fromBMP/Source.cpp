@@ -184,6 +184,36 @@ void printMaze(vector< vector<int> > mat) {
 	printf("\n");
 }
 
+void printMazeCenter(vector< vector<int> > mat, point center, int radius) {
+	int height = mat.size() - 1;
+	int width = mat[0].size() - 1;
+	int i, j;
+	int zid = 254;
+	printf("\n");
+
+	point start = { center.x - radius < 1 ? 1 : center.x - radius,center.y - radius < 1 ? 1 : center.y - radius };
+	point end = { center.x + radius > height ? height : center.x + radius,center.y + radius > width ? width : center.y + radius };
+
+	for (j = start.y; j <= end.y; j += 2)
+		printf("%-2d  ", j);
+	printf("\n");
+	for (i = start.x; i <= end.x; i++)
+	{
+		for (j = start.y; j <= end.y; j++)
+			switch (mat[i][j])
+			{
+			case -1: printf("%c%c", zid, zid); break;
+			case 1: printf("<<"); break;
+			case 2: printf("vv"); break;
+			case 3: printf(">>"); break;
+			case 4: printf("^^"); break;
+			default: printf("  "); break;
+			}
+		printf(" %d\n", i);
+	}
+	printf("\n");
+}
+
 // prints the maze with the path
 void tipar(vector< vector<int> > mat, vector<point> sol, int k, vector<int> dir) {
 	int i;
@@ -191,8 +221,8 @@ void tipar(vector< vector<int> > mat, vector<point> sol, int k, vector<int> dir)
 	{
 		mat[sol[i].x][sol[i].y] = dir[i + 1];
 
-		//system("cls");
-		//afisare(mat);
+		system("cls");
+		printMazeCenter(mat, sol[i], 20);
 	}
 
 	mat[sol[i].x][sol[i].y] = dir[i];
@@ -374,14 +404,16 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 }
 
 int main() {
-	FILE* fout = fopen("maze41Solved.bmp", "wb");
-
+	// input file
 	std::ifstream input("maze41.bmp", std::ios::binary);
 	// copies all data into buffer
 	std::vector<unsigned char> buffer((
 		std::istreambuf_iterator<char>(input)),
 		(std::istreambuf_iterator<char>()));
 	input.close();
+
+	// output file
+	FILE* fout = fopen("maze41Solved.bmp", "wb");
 
 	vector< vector<int> > mat = createMatFromBMPFile(buffer);
 	printMaze(mat);

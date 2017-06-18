@@ -19,6 +19,8 @@ After showing the solution it creates a new BMP file using the bits from the fir
 (colouring it in gray which is the value of white / 2).
 
 Note, Backtracking is very slow, I suggest sticking to the first option.
+2nd Note: if the dimensions of the maze is too big then I suggest maximizing the command window and reducing the font.
+Right Click -> Properties -> Font -> Size -> 8
 
 TODO:
 1. solve the 1024.bmp image
