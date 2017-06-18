@@ -41,7 +41,7 @@ vector< vector<int> > createMatFromBMPFile(vector<unsigned char> imagedata) {
 			for (int b = 0; b < bpp; b++) {
 				s += (int)imagedata[k + b];
 			}
-			if (s < 240 * bpp) { // is pixel almost black
+			if (s < 215 * bpp) { // is pixel almost black
 				mat[i][j] = -1;	// put wall
 			}
 			k += bpp;
@@ -453,7 +453,7 @@ int main() {
 
 	while (true) {
 		// input file
-		printf("Choose input BMP file name:\n 1)maze.bmp\n 2)maze2.bmp\n 3)maze3.bmp\n 4)1024.bmp\n x)Other\n");
+		printf("Choose input BMP file name:\n 1)maze.bmp\n 2)maze2.bmp\n 3)maze3.bmp\n 4)1024.bmp\n 5)cat.bmp\n 6)theseus.bmp\n x)Other\n");
 		switch (_getch()) {
 		case '1': strcpy(filename, "maze1.bmp"); printf("Recommended\n end point: 2 31\n start point: 30 2\n"); break;
 		case '2': strcpy(filename, "maze2.bmp"); printf("Recommended\n end point: 57 1\n start point: 14 21\n"); break;
