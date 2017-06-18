@@ -72,10 +72,20 @@ void writeBMPFileFromMat(vector< vector<int> > mat, FILE* fout, vector<point> so
 
 	// marking the path to colour it differently
 	int i;
+	point v;
 	for (i = 1; i < k; i++) {
-		mat[sol[i].x][sol[i].y] = 'x';
+		// mark neigbours to thicken the line
+		for (int j = 0; j < 4; j++) {
+			v.x = sol[i].x + d[j].x;
+			v.y = sol[i].y + d[j].y;
+			if (mat[v.x][v.y] != -1)
+				mat[v.x][v.y] = -2;
+		}
+
+		// mark current position
+		mat[sol[i].x][sol[i].y] = -2;
 	}
-	mat[sol[i].x][sol[i].y] = 'x';
+	mat[sol[i].x][sol[i].y] = -2;
 
 	// rewriting the imgdata with the path coloured
 	k = offset;
@@ -83,7 +93,7 @@ void writeBMPFileFromMat(vector< vector<int> > mat, FILE* fout, vector<point> so
 		for (int j = 1; j <= width; j++) {
 			int s = 0;
 			for (int b = 0; b < bpp; b++)
-				if (mat[i][j] == 'x')
+				if (mat[i][j] == -2)
 					imgdata[k + b] /= 2;
 			k += bpp;
 		}
@@ -125,48 +135,6 @@ void printMat(vector< vector<int> > mat) {
 	}
 }
 
-void readStartPoz(vector< vector<int> > mat, int& Sx, int& Sy) {
-	int height = mat.size() - 1;
-	int width = mat[0].size() - 1;
-
-tryagain:
-	printf("Write the coord for start position (Format: x y)\n");
-	scanf("%d %d", &Sx, &Sy);
-
-	if (Sx < 1 || Sx > height || Sy < 1 || Sy > width || mat[Sx][Sy] == -1)
-	{
-		printf("Outside or Wall => Try again\n");
-		goto tryagain;
-	}
-}
-
-vector<point> readEndPoz(vector< vector<int> > mat) {
-	int height = mat.size();
-	int width = mat[0].size();
-
-	int nr_exits;
-	printf("How many exits?\n");
-	scanf("%d", &nr_exits);
-
-	int Ex, Ey;	// End coordonates
-	vector<point> exits;
-	for (int i = 0; i < nr_exits; i++) {
-	tryagain2:
-		printf("Write the coord for end position (Format: x y)\n");
-		scanf("%d %d", &Ex, &Ey);
-
-		if (Ex < 1 || Ex > height || Ey < 1 || Ey > width || mat[Ex][Ey] == -1)
-		{
-			printf("Outside or Wall => Try again\n");
-			goto tryagain2;
-		}
-
-		exits.push_back({ Ex, Ey });
-	}
-
-	return exits;
-}
-
 // prints the entire maze
 void printMaze(vector< vector<int> > mat) {
 	int height = mat.size() - 1;
@@ -174,7 +142,7 @@ void printMaze(vector< vector<int> > mat) {
 	int i, j;
 	int zid = 254;
 	printf("\n");
-	for (j = 1; j <= width; j+=2)
+	for (j = 1; j <= width; j += 2)
 		printf("%-2d  ", j);
 	printf("\n");
 	for (i = 1; i <= height; i++)
@@ -223,6 +191,67 @@ void printMazeCrop(vector< vector<int> > mat, point center, int radius) {
 		printf(" %d\n", i);
 	}
 	printf("\n");
+}
+
+void readWhatToCrop(vector< vector<int> > mat) {
+	int x, y, r;
+	while (true) {
+		printf("Show specific crop of the maze?\n y/n\n");
+		if (_getch() == 'y') {
+			printf("Write point coord and radius (Format: x y r)\n");
+			scanf("%d %d %d", &x, &y, &r);
+			printMazeCrop(mat, { x, y }, r);
+		}
+		else {
+			break;
+		}
+	}
+}
+
+void readStartPoz(vector< vector<int> > mat, int& Sx, int& Sy) {
+	int height = mat.size() - 1;
+	int width = mat[0].size() - 1;
+
+	readWhatToCrop(mat);
+
+tryagain:
+	printf("Write the coord for start position (Format: x y)\n");
+	scanf("%d %d", &Sx, &Sy);
+
+	if (Sx < 1 || Sx > height || Sy < 1 || Sy > width || mat[Sx][Sy] == -1)
+	{
+		printf("Outside or Wall => Try again\n");
+		goto tryagain;
+	}
+}
+
+vector<point> readEndPoz(vector< vector<int> > mat) {
+	int height = mat.size();
+	int width = mat[0].size();
+
+	int nr_exits;
+	printf("How many exits?\n");
+	scanf("%d", &nr_exits);
+
+	int Ex, Ey;	// End coordonates
+	vector<point> exits;
+	for (int i = 0; i < nr_exits; i++) {
+	tryagain2:
+		readWhatToCrop(mat);
+		
+		printf("Write the coord for end position (Format: x y)\n");
+		scanf("%d %d", &Ex, &Ey);
+
+		if (Ex < 1 || Ex > height || Ey < 1 || Ey > width || mat[Ex][Ey] == -1)
+		{
+			printf("Outside or Wall => Try again\n");
+			goto tryagain2;
+		}
+
+		exits.push_back({ Ex, Ey });
+	}
+
+	return exits;
 }
 
 // animates the printing of the maze's path
@@ -421,49 +450,65 @@ void solveBKT(vector< vector<int> > mat, FILE* fout, vector<unsigned char> imgda
 
 int main() {
 	char* filename = (char*)malloc(20);
-	printf("Choose input BMP file name:\n 1)maze.bmp\n 2)maze2.bmp\n 3)maze3.bmp\n 4)1024.bmp\n x)Other\n");
-	switch (_getch()) {
-	case '1': strcpy(filename, "maze1.bmp"); printf("Recommended\n end point: 2 31\n start point: 30 2\n"); break;
-	case '2': strcpy(filename, "maze2.bmp"); printf("Recommended\n end point: 57 1\n start point: 14 21\n"); break;
-	case '3': strcpy(filename, "maze3.bmp"); printf("Recommended\n end point: 74 94\n start point: 10 10\n"); break;
-	case '4': strcpy(filename, "1024.bmp"); printf("Recommended\n end point: 1022 1024\n start point: 1 3\n"); break;
-	default: printf("Please Enter a file name: "); scanf("%s", filename); break;
+
+	while (true) {
+		// input file
+		printf("Choose input BMP file name:\n 1)maze.bmp\n 2)maze2.bmp\n 3)maze3.bmp\n 4)1024.bmp\n x)Other\n");
+		switch (_getch()) {
+		case '1': strcpy(filename, "maze1.bmp"); printf("Recommended\n end point: 2 31\n start point: 30 2\n"); break;
+		case '2': strcpy(filename, "maze2.bmp"); printf("Recommended\n end point: 57 1\n start point: 14 21\n"); break;
+		case '3': strcpy(filename, "maze3.bmp"); printf("Recommended\n end point: 74 94\n start point: 10 10\n"); break;
+		case '4': strcpy(filename, "1024.bmp"); printf("Recommended\n end point: 1022 1024\n start point: 1 3\n"); break;
+		case '5': strcpy(filename, "cat.bmp"); printf("Recommended\n end point: 230 600\n start point: 20 70\n"); break;
+		case '6': strcpy(filename, "theseus.bmp"); printf("Recommended\n end point: 400 530\n start point: 740 510\n"); break;
+		default: printf("Please Enter a file name: "); scanf("%s", filename); break;
+		}
+
+		std::ifstream input(filename, std::ios::binary);
+		// copies all data into buffer
+		std::vector<unsigned char> buffer((
+			std::istreambuf_iterator<char>(input)),
+			(std::istreambuf_iterator<char>()));
+		input.close();
+
+		if (buffer.size() == 0) { 
+			printf("File not found\nTry again? y/n\n"); 
+			if (_getch() == 'y')
+				continue;
+			else
+				break;
+		}
+
+		// output file
+		filename[strlen(filename) - 4] = 0;
+		strcat(filename, "Solved.bmp");
+		FILE* fout = fopen(filename, "wb");
+
+		printf("\nPress any key to continue\n");
+		_getch();	// waits any key
+
+		vector< vector<int> > mat = createMatFromBMPFile(buffer);
+		printMazeCrop(mat, { 50,50 }, 60);
+
+		printf("y:Show the best solution (Recomended) or\nn:every single solution? (Note that Backtracking is very slow)\n y/n\n");
+		if (_getch() == 'y') {
+			solveBest(mat, fout, buffer);
+		}
+		else {
+			solveBKT(mat, fout, buffer);
+		}
+
+		// free memory
+		fclose(fout);
+		buffer.clear();
+		mat.clear();
+
+		printf("\nThe solution Image was created\nTry another image? y/n\n");
+		if (_getch() == 'y')
+			continue;
+		else
+			break;
 	}
-
-	printf("\nPress any key to continue\n");
-	_getch();	// waits any key
-
-	// input file
-	std::ifstream input(filename, std::ios::binary);
-	// copies all data into buffer
-	std::vector<unsigned char> buffer((
-		std::istreambuf_iterator<char>(input)),
-		(std::istreambuf_iterator<char>()));
-	input.close();
-
-	// output file
-	filename[strlen(filename) - 4] = 0;
-	strcat(filename, "Solved.bmp");
-	FILE* fout = fopen(filename, "wb");
-
-	vector< vector<int> > mat = createMatFromBMPFile(buffer);
-	printMazeCrop(mat, { 50,50 }, 60);
-
-	printf("y:Show the best solution (Recomended) or\nn:every single solution? (Note that Backtracking is very slow)\n y/n\n");
-	if (_getch() == 'y') {
-		solveBest(mat, fout, buffer);
-	}
-	else {
-		solveBKT(mat, fout, buffer);
-	}
-
-	fclose(fout);
-	printf("\nThe solution Image was created\nPress any key to exit\n");
-	_getch();	// waits any key
-
-	// free memory
-	buffer.clear();
-	mat.clear();
 
 	return 0;
 }
