@@ -1,4 +1,6 @@
 # MazeGenerator_fromBMP
+Warning! Stroboscopic Output! Comment in function tipar() to show the maze directly solved!
+
 Bmp formats supported: 8, 16, 24, 32 bits per pixel
 
 Input: in main() please specify input image name
