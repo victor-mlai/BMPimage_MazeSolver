@@ -24,6 +24,7 @@ struct vec2 {
 
 vec2 d[] = { { 0,-1 },{ 1,0 },{ 0,1 },{ -1,0 } };	// used by solveBest and solveBKT for calculating the neighbour point
 vec2 maxRadius = {80, 240};
+vec2 minRadius = {20, 20};
 
 vector< vector<int> > createMatFromBMPFile(vector<unsigned char> imagedata) {
 	unsigned char bpp, padding;
@@ -270,10 +271,12 @@ void readStartPoz(vector< vector<int> > mat, vec2& Start) {
 	int height = mat.size() - 1;
 	int width = mat[0].size() - 1;
 
+	printf("For Start point ");
 	readWhatToCrop(mat);
 
 	while (true) {
 		printf("Write the coord for start position (Format: x y)\n");
+
 		scanf("%d %d", &Start.x, &Start.y);
 
 		if (Start.x < 1 || Start.x > height || Start.y < 1 || Start.y > width || mat[Start.x][Start.y] == -1)
@@ -297,6 +300,7 @@ vector<vec2> readEndPoz(vector< vector<int> > mat) {
 	vec2 exit;	// End coordonates
 	vector<vec2> exits;
 	for (int i = 0; i < nr_exits; i++) {
+		printf("For End position #%d ", i + 1);
 		while (true) {
 			readWhatToCrop(mat);
 
@@ -327,7 +331,7 @@ void tipar(vector< vector<int> > mat, vector<vec2> sol, int k, vector<int> dir) 
 
 		// comment here to show the maze directly solved
 		//system("cls");
-		//printMazeCrop(mat, sol[i], maxRadius);
+		//printMazeCrop(mat, sol[i], minRadius);
 	}
 
 	mat[sol[i].x][sol[i].y] = dir[i];
