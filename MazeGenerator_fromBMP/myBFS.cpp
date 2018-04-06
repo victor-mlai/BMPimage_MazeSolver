@@ -1,7 +1,5 @@
 #include "myBFS.h"
-
-vec2 maxRadius = { 80, 240 };
-vec2 minRadius = { 20, 20 };
+#include <queue>	// priority queue for bfs
 
 // stops the program for x seconds (used for delaying the output when printing the next arrow ( >>, <<, vv, ^^ ))
 static void wait(float seconds)
@@ -11,32 +9,31 @@ static void wait(float seconds)
 }
 
 // animates the printing of the maze's path
-void printPath(Maze & maze, vector< pair<vec2, int> > & path) {
-	for (auto it : path) {
-		maze.setVal(it.first, it.second);
+void printPath(Maze & maze, vector<path_cell> & path) {
+	for (auto & it : path) {
+		maze.setVal(it.position, it.direction);
 
 		// comment here to show the maze directly solved
-		system("cls");
-		maze.printMazeCrop(it.first, minRadius);
+		//system("cls");
+		//maze.printMazeCrop(it.position, minRadius);
 		// wait(0.1f);
 	}
 
 	system("cls");
-	maze.printMazeCrop(path.back().first, maxRadius);
+	maze.printMazeCrop(path.back().position, maxRadius);
 }
 
-// for each point in the maze set the distance to any exit
+// set the distance for each position to the closest exit
 static void bfs(Maze & maze, const vector<vec2> & exits) {
 	int n = maze.getNrRows();
 	int m = maze.getNrCols();
 	queue<vec2> q;
 
-	vec2 directions[] = { { 1, 0 },{ -1, 0 },{ 0, 1 },{ 0, -1 } };
-	// for each exit point I apply Dijkstra to calculate the distances
+	// for each exit I apply Dijkstra to calculate the distances
 	for (vec2 E : exits) {
 		q.push(E);
-		// TODO make 5 a const or put in an enum
-		maze.setVal(E, 5);	// marked the exit position
+
+		maze.setVal(E, DISTANCE_FROM_EXIT_TO_EXIT);	// marked the exit position
 
 		while (!q.empty()) {
 			vec2 F = q.front();
@@ -56,13 +53,13 @@ static void bfs(Maze & maze, const vector<vec2> & exits) {
 		}
 
 		// uncomment these to see the distances
-		printMat(maze);
-		_getch();
+		//printMat(maze);
+		//_getch();
 	}
 }
 
 // returns true if a solution exists
-bool solveBest(Maze & maze, vector< pair<vec2, int> > & path) {
+bool solveBest(Maze & maze, vector<path_cell> & path) {
 	path.reserve(maze.getNrCols() * maze.getNrRows());	// the maximum length the path can have
 	bool smallerValFound;
 
@@ -70,14 +67,13 @@ bool solveBest(Maze & maze, vector< pair<vec2, int> > & path) {
 	bfs(maze, exits);
 
 	vec2 Start;	// Start Position
-	vec2 directions[] = { { 1, 0 },{ -1, 0 },{ 0, 1 },{ 0, -1 } };
 	while (true) {	// while I want to start from a different point
 		readStartPos(maze, Start);
-		path.push_back(make_pair(Start, 0));
+		path.push_back(path_cell(Start, 0));
 
 		vec2 Curr = Start;	// Current Position
 		vec2 Neigh;		// Neighbour's Position
-		while (maze.getVal(Curr) != 5) {	// while the Current position isn't the exit
+		while (maze.getVal(Curr) != DISTANCE_FROM_EXIT_TO_EXIT) {	// while the Current position isn't the exit
 			smallerValFound = false;
 			for (int i = 0; i < 4; i++) {
 				// for each neighbour
@@ -85,8 +81,8 @@ bool solveBest(Maze & maze, vector< pair<vec2, int> > & path) {
 				// going to the neighbour that has the distance smaller than the current point
 				if (maze.getVal(Neigh) < maze.getVal(Curr) && maze.getVal(Neigh) > 0) {
 					smallerValFound = true;
+					path.push_back(path_cell(Curr, i + 1));
 					Curr = Neigh;
-					path.push_back(make_pair(Curr, i + 1));
 					break;
 				}
 			}

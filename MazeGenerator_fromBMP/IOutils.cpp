@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "IOutils.h"
 
 Maze *createMatFromBMPFile(vector<unsigned char> & imagedata) {
 	unsigned char bpp, padding;
@@ -20,7 +20,8 @@ Maze *createMatFromBMPFile(vector<unsigned char> & imagedata) {
 
 	/* filling the maze */
 	Maze *maze = new Maze(height, width);
-
+	system("cls");
+	maze->printMaze();
 	int k = offset;
 	for (int i = height - 1; i >= 0; i--) {
 		for (int j = 0; j < width; j++) {
@@ -29,7 +30,7 @@ Maze *createMatFromBMPFile(vector<unsigned char> & imagedata) {
 				s += (int)imagedata[k + b];
 			}
 			if (s < 215 * bpp) { // is pixel almost black
-				maze->setVal(i, j, -1);
+				maze->setVal(i, j, Maze::BLOCK);
 			}
 			k += bpp;
 		}
@@ -45,10 +46,8 @@ Maze *createMatFromBMPFile(vector<unsigned char> & imagedata) {
  * path - array of directions for each position
  * imgdata - image data used to write another image using the old one
 */
-void writeBMPFileFromMat(
-	Maze *maze,
-	FILE* fout,
-	vector< pair<vec2, int> > &path,	// position, direction
+void writeBMPFileFromMat(Maze *maze, FILE* fout,
+	vector<path_cell> &path,	// position, direction
 	vector<unsigned char> & imgdata)
 {
 	unsigned char bpp, padding;
@@ -65,53 +64,45 @@ void writeBMPFileFromMat(
 	// marking the path with '-2' to colour it differently
 	vec2 v;
 	int path_size = path.size();
-	vec2 directions[] = { { 1, 0 },{ -1, 0 },{ 0, 1 },{ 0, -1 } };
 	for (int i = 1; i < path_size; i++) {
 		// mark neigbours to thicken the line
 		for (vec2 dir : directions) {
-			v = path[i].first + dir;
-			if (maze->getVal(v) != -1)
-				maze->setVal(v, -2);
+			v = path[i].position + dir;
+			if (maze->getVal(v) != Maze::BLOCK)
+				maze->setVal(v, PATH_ENCODING);
 		}
 
 		// mark current position
-		maze->setVal(path[i].first, -2);
+		maze->setVal(path[i].position, PATH_ENCODING);
 	}
-	maze->setVal(path[path_size - 1].first, -2);
+	maze->setVal(path[path_size - 1].position, PATH_ENCODING);
 
-	// rewriting the imgdata with the path coloured
+	// rewriting imgdata with the path coloured
 	int k = offset;
 	for (int i = height-1; i >= 0; i--) {
 		for (int j = 0; j < width; j++) {
 			int s = 0;
 			for (int b = 0; b < bpp; b++)
-				if (maze->getVal(i, j) == -2)
-					imgdata[k + b] /= 2;
+				if (maze->getVal(i, j) == PATH_ENCODING)
+					imgdata[k + b] /= 2;	// changing white to half white (i.e. gray)
 			k += bpp;
 		}
 		k += padding;
 	}
 
-	// create auxiliary vector so I can call fwrite with the right parameters
-	unsigned char* vec = (unsigned char*)calloc(imgdata.size(), sizeof(unsigned char));
-	int size = 0;
-	for (unsigned char c : imgdata)
-		vec[size++] = c;
-
-	fwrite(vec, 1, size, fout);
-	free(vec);
+	fwrite(imgdata.data(), 1, imgdata.size(), fout);
 }
 
 // prints the maze with all the distances (used for debugging in bfs)
-void printMat(Maze & maze) {
+void printMat(const Maze & maze) {
 	int n = maze.getNrRows();
 	int m = maze.getNrCols();
-	int zid = 219;
+	int block = 219;
 
 	for (int i = 0; i < n; i++)	{
 		for (int j = 0; j < m; j++) {
-			if (maze.getVal(i, j) == -1)
-				printf("%c%c%c%c", zid, zid, zid, zid);
+			if (maze.getVal(i, j) == Maze::BLOCK)
+				printf("%c%c%c%c", block, block, block, block);
 			else
 				printf("%-3d ", maze.getVal(i, j));
 		}
@@ -135,7 +126,7 @@ void readWhatToCrop(const Maze & maze) {
 	}
 }
 
-void readStartPos(Maze & maze, vec2 & Start) {
+void readStartPos(const Maze & maze, vec2 & Start) {
 	int height = maze.getNrRows();
 	int width = maze.getNrCols();
 
@@ -147,7 +138,7 @@ readStartPosLabel:
 
 	cin >> Start.x >> Start.y;
 
-	if (Start.x < 1 || Start.x > height || Start.y < 1 || Start.y > width || maze.getVal(Start) == -1)
+	if (Start.x < 0 || Start.x >= height || Start.y < 0 || Start.y >= width || maze.getVal(Start) == Maze::BLOCK)
 	{
 		cout << "Outside Maze or Wall position => Try again\n";
 		goto readStartPosLabel;	// try again
@@ -171,7 +162,7 @@ vector<vec2> readEndPos(const Maze & maze) {
 			cout << "Write the coordinates for exit position (Format: x y)\n";
 			cin >> exit.x >> exit.y;
 
-			if (exit.x < 0 || exit.x >= height || exit.y < 0 || exit.y >= width || maze.getVal(exit) == -1)
+			if (exit.x < 0 || exit.x >= height || exit.y < 0 || exit.y >= width || maze.getVal(exit) == Maze::BLOCK)
 			{
 				cout << "Outside Maze or Wall position => Try again\n";
 				continue;

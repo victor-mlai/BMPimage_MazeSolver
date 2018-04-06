@@ -1,6 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "utils.h"
+#include "IOutils.h"
 #include "myBFS.h"
 
 using namespace std;
@@ -10,8 +10,8 @@ int main() {
 
 	for(;;) {
 		// input file
-		cout << "Choose input BMP file name:\n 1)maze.bmp\n 2)maze2.bmp\n" << 
-			" 3)maze3.bmp\n 4)1024.bmp\n 5)cat.bmp\n 6)theseus.bmp\n x)Other\n";
+		cout << "Choose input BMP file name:\n 1)maze.bmp\n 2)maze2.bmp\n " << 
+			"3)maze3.bmp\n 4)1024.bmp\n 5)cat.bmp\n 6)theseus.bmp\n x)Other\n";
 
 		switch (_getch()) {
 		case '1': 
@@ -21,31 +21,26 @@ int main() {
 
 		case '2': 
 			strcpy(filename, "maze2.bmp");
-			/* TODO rewrite positions */
 			cout << "Recommended\n exit position: 56 0\n start: 13 20\n";
 			break;
 
 		case '3':
 			strcpy(filename, "maze3.bmp");
-			/* TODO rewrite positions */
 			cout << "Recommended\n exit position: 73 93\n start: 9 9\n";
 			break;
 
 		case '4': 
 			strcpy(filename, "1024.bmp");
-			/* TODO rewrite positions */
 			cout << "Recommended\n exit position: 1021 1023\n start: 0 2\n";
 			break;
 
 		case '5': 
 			strcpy(filename, "cat.bmp");
-			/* TODO rewrite positions */
 			cout << "Recommended\n exit position: 230 600\n start: 20 70\n";
 			break;
 
 		case '6': 
 			strcpy(filename, "theseus.bmp");
-			/* TODO rewrite positions */
 			cout << "Recommended\n exit position: 400 530\n start: 740 510\n";
 			break;
 
@@ -78,7 +73,10 @@ int main() {
 
 		Maze *maze = createMatFromBMPFile(imgdata);
 
-		vector< pair<vec2, int> > path;	// the solution vector: <position: vec2, direction: int>
+		system("cls");
+		maze->printMaze();
+
+		vector<path_cell> path;	// the solution vector: <position: vec2, direction: int>
 		if (solveBest(*maze, path)) {	// if there is a path
 			writeBMPFileFromMat(maze, fout, path, imgdata);	// create a new image
 		}

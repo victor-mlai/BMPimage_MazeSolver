@@ -1,6 +1,10 @@
 #pragma once
-#include "utils.h"
+#include "IOutils.h"
 
-bool solveBest(Maze & maze, vector< pair<vec2, int> > & path);
+static const int DISTANCE_FROM_EXIT_TO_EXIT = 5;
+static const vec2 maxRadius = { 80, 240 };
+static const vec2 minRadius = { 20, 20 };
 
-void printPath(Maze & maze, vector< pair<vec2, int> > & path);
+bool solveBest(Maze & maze, vector<path_cell> & path);
+
+void printPath(Maze & maze, vector<path_cell> & path);

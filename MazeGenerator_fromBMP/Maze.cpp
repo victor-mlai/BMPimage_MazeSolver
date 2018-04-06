@@ -4,12 +4,12 @@
 
 // prints a crop of the maze
 void Maze::printMazeCrop(const vec2 & center, const vec2 & radius) const {
-	int zid = 219;
+	int block = 219;
 
-	vec2 upLeftCorner = { center.x - radius.x < 1 ? 0 : center.x - radius.x,
-		center.y - radius.y < 1 ? 0 : center.y - radius.y };
-	vec2 bottomRightCorner = { center.x + radius.x > nrRows ? nrRows - 1 : center.x + radius.x,
-		center.y + radius.y > nrCols ? nrCols - 1 : center.y + radius.y };
+	vec2 upLeftCorner		= { center.x - radius.x < 1 ? 0 : center.x - radius.x,
+								center.y - radius.y < 1 ? 0 : center.y - radius.y };
+	vec2 bottomRightCorner	= { center.x + radius.x >= nrRows ? nrRows - 1 : center.x + radius.x,
+								center.y + radius.y >= nrCols ? nrCols - 1 : center.y + radius.y };
 
 	printf("\n");
 
@@ -21,11 +21,11 @@ void Maze::printMazeCrop(const vec2 & center, const vec2 & radius) const {
 	for (int i = upLeftCorner.x; i <= bottomRightCorner.x; i++) {
 		for (int j = upLeftCorner.y; j <= bottomRightCorner.y; j++) {
 			switch (this->getVal(i, j)) {
-			case -1: printf("%c%c", zid, zid); break;
-			case 1:  printf("<<"); break;
-			case 2:  printf("vv"); break;
-			case 3:  printf(">>"); break;
-			case 4:  printf("^^"); break;
+			case BLOCK: printf("%c%c", block, block); break;
+			case N:  printf("^^"); break;
+			case E:  printf(">>"); break;
+			case S:  printf("vv"); break;
+			case W:  printf("<<"); break;
 			default: printf("  "); break;
 			}
 		}

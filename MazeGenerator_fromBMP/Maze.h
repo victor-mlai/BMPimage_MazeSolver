@@ -16,34 +16,40 @@ struct vec2 {
 class Maze
 {
 private:
-	int *maze;
+	int **maze;
 	int nrRows;
 	int nrCols;
 
 public:
 	Maze() {}
 	Maze(int nrRows, int nrCols) : nrRows(nrRows), nrCols(nrCols) {
-		maze = new int[nrRows * nrCols]();
+		maze = new int*[nrRows];
+		for (int i = 0; i < nrRows; i++) {
+			maze[i] = new int[nrCols]();
+		}
 	}
 
 	~Maze() {
+		for (int i = 0; i < nrRows; i++) {
+			delete[] maze[i];
+		}
 		delete[] maze;
 	}
 
 	inline int getVal(int row, int col) const {
-		return maze[row * nrRows + col];
+		return maze[row][col];
 	}
 
 	inline int getVal(const vec2 & v) const {
-		return maze[v.x * nrRows + v.y];
+		return maze[v.x][v.y];
 	}
 
 	void setVal(int row, int col, int value) {
-		maze[row * nrRows + col] = value;
+		maze[row][col] = value;
 	}
 
 	void setVal(const vec2 & v, int value) {
-		maze[v.x * nrRows + v.y] = value;
+		maze[v.x][v.y] = value;
 	}
 
 	inline int getNrRows() const {
@@ -59,4 +65,11 @@ public:
 
 	// prints the entire maze
 	void printMaze();
+
+	static const int BLOCK = -1;
+	static const int EMPTY = 0;
+	static const int N = 1;
+	static const int E = 2;
+	static const int S = 3;
+	static const int W = 4;
 };
