@@ -48,9 +48,12 @@ std::string getInputFilePath(std::string &filename) {
 void getImgData(std::vector<unsigned char> &imgdata, std::string &inpFile) {
 	std::ifstream input(inpFile, std::ios::binary);
 
-	imgdata = std::vector<unsigned char>((
-		std::istreambuf_iterator<char>(input)),
-		(std::istreambuf_iterator<char>()));
+	imgdata.swap(
+		std::vector<unsigned char>(
+			std::istreambuf_iterator<char>(input),
+			std::istreambuf_iterator<char>()
+		)
+	);
 
 	input.close();
 }
