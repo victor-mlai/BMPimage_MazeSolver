@@ -126,10 +126,12 @@ void readWhatToCrop(const Maze & maze) {
 	}
 }
 
-void readStartPos(const Maze & maze, vec2 & Start) {
-	int height = maze.getNrRows();
-	int width = maze.getNrCols();
+static bool isInBounds(const Maze &maze, const vec2 &V) {
+	return V.x >= 0 && V.x < maze.getNrRows()
+		&& V.y >= 0 && V.y < maze.getNrCols();
+}
 
+void readStartPos(const Maze & maze, vec2 & Start) {
 	cout << "For Start point ";
 	readWhatToCrop(maze);
 
@@ -138,7 +140,7 @@ readStartPosLabel:
 
 	cin >> Start.x >> Start.y;
 
-	if (Start.x < 0 || Start.x >= height || Start.y < 0 || Start.y >= width || maze.getVal(Start) == Maze::BLOCK)
+	if (!isInBounds(maze, Start) || maze.getVal(Start) == Maze::BLOCK)
 	{
 		cout << "Outside Maze or Wall position => Try again\n";
 		goto readStartPosLabel;	// try again
@@ -162,7 +164,7 @@ vector<vec2> readEndPos(const Maze & maze) {
 			cout << "Write the coordinates for exit position (Format: x y)\n";
 			cin >> exit.x >> exit.y;
 
-			if (exit.x < 0 || exit.x >= height || exit.y < 0 || exit.y >= width || maze.getVal(exit) == Maze::BLOCK)
+			if (!isInBounds(maze, exit) || maze.getVal(exit) == Maze::BLOCK)
 			{
 				cout << "Outside Maze or Wall position => Try again\n";
 				continue;

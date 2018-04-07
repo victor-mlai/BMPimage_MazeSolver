@@ -25,10 +25,13 @@ void printPath(Maze & maze, vector<path_cell> & path) {
 	maze.printMazeCrop(path.back().position, maxRadius);
 }
 
+static bool isInBounds(const Maze &maze, const vec2 &V) {
+	return V.x >= 0 && V.x < maze.getNrRows()
+		&& V.y >= 0 && V.y < maze.getNrCols();
+}
+
 // set the distance for each position to the closest exit
 static void bfs(Maze & maze, const vector<vec2> & exits) {
-	int n = maze.getNrRows();
-	int m = maze.getNrCols();
 	queue<vec2> q;
 
 	// for each exit I apply Dijkstra to calculate the distances
@@ -45,8 +48,8 @@ static void bfs(Maze & maze, const vector<vec2> & exits) {
 			for (vec2 dir : directions) {	// for each neighbour
 				V = F + dir;
 
-				if (V.x >= 0 && V.x < n && V.y >= 0 && V.y < m) {
-					if (maze.getVal(V) == 0 || maze.getVal(V) > maze.getVal(F) + 1) {
+				if (isInBounds(maze, V)) {
+					if (maze.getVal(V) == Maze::EMPTY || maze.getVal(V) > maze.getVal(F) + 1) {
 						maze.setVal(V, maze.getVal(F) + 1);
 						q.push(V);
 					}
