@@ -1,11 +1,9 @@
 #pragma once
 #include "Maze.h"
 #include <stdio.h>	// printf
-#include <time.h>	// wait function
 #include <conio.h>	// _getch()
 #include <vector>
 #include <fstream>	// read input file
-#include <iterator>	// iterate through file's bits
 #include <iostream>	// cin & cout
 
 using namespace std;

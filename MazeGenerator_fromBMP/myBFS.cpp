@@ -1,5 +1,6 @@
 #include "myBFS.h"
 #include <queue>	// priority queue for bfs
+#include <time.h>	// wait function
 
 // stops the program for x seconds (used for delaying the output when printing the next arrow ( >>, <<, vv, ^^ ))
 static void wait(float seconds)
@@ -14,6 +15,7 @@ void printPath(Maze & maze, vector<path_cell> & path) {
 		maze.setVal(it.position, it.direction);
 
 		// comment here to show the maze directly solved
+		// and to remove the stroboscopic effect
 		//system("cls");
 		//maze.printMazeCrop(it.position, minRadius);
 		// wait(0.1f);
@@ -60,8 +62,8 @@ static void bfs(Maze & maze, const vector<vec2> & exits) {
 
 // returns true if a solution exists
 bool solveBest(Maze & maze, vector<path_cell> & path) {
-	path.reserve(maze.getNrCols() * maze.getNrRows());	// the maximum length the path can have
 	bool smallerValFound;
+	path.reserve(maze.getNrCols() * maze.getNrRows());	// the maximum length the path can have
 
 	vector<vec2> exits = readEndPos(maze);
 	bfs(maze, exits);
